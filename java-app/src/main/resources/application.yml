@@ -1,0 +1,97 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /targetcv
+
+spring:
+  application:
+    name: TargetCV
+  
+  # Database Configuration
+  datasource:
+    url: jdbc:mysql://localhost:3306/targetcv_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    username: root
+    password: password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+  
+  # File Upload Configuration
+  servlet:
+    multipart:
+      max-file-size: 16MB
+      max-request-size: 16MB
+      enabled: true
+  
+  # Thymeleaf Configuration
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+    encoding: UTF-8
+
+# Application Configuration
+targetcv:
+  upload:
+    directory: uploads/
+    allowed-extensions: pdf,docx,txt,doc
+  analysis:
+    max-keywords: 20
+    similarity-threshold: 0.6
+
+# Logging Configuration
+logging:
+  level:
+    com.targetcv: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/targetcv.log
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+---
+# Production Profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  thymeleaf:
+    cache: true
+
+logging:
+  level:
+    com.targetcv: INFO
+    org.hibernate.SQL: WARN

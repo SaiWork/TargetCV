@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::#content})}">
+<head>
+    <title th:text="${pageTitle}">Analyze Resume - TargetCV</title>
+</head>
+<body>
+    <div id="content">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="mb-0"><i class="fas fa-search me-2"></i>Job Description Analysis</h3>
+                        <small class="text-muted">Resume: <span th:text="${resume.originalFilename}">filename</span></small>
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/analysis/analyze/{id}(id=${resume.id})}" method="post">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label for="jobTitle" class="form-label">Job Title (Optional)</label>
+                                        <input type="text" class="form-control" id="jobTitle" name="jobTitle" 
+                                               placeholder="e.g., Senior Java Developer">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="companyName" class="form-label">Company Name (Optional)</label>
+                                        <input type="text" class="form-control" id="companyName" name="companyName" 
+                                               placeholder="e.g., Tech Corp Inc.">
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label for="jobDescription" class="form-label">
+                                            <strong>Job Description *</strong>
+                                        </label>
+                                        <textarea class="form-control" id="jobDescription" name="jobDescription" 
+                                                 rows="12" placeholder="Paste the complete job description here..." required></textarea>
+                                        <div class="form-text">
+                                            Include the full job posting for best analysis results
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-lg-6">
+                                    <div class="mb-4">
+                                        <label class="form-label">
+                                            <strong>Your Resume Preview</strong>
+                                        </label>
+                                        <div class="border rounded p-3" style="height: 400px; overflow-y: auto; background-color: #f8f9fa;">
+                                            <pre class="mb-0" style="white-space: pre-wrap; font-size: 0.9em;" 
+                                                 th:text="${#strings.length(resume.extractedText) > 1000 ? #strings.substring(resume.extractedText, 0, 1000) + '...' : resume.extractedText}">
+                                                Resume content preview
+                                            </pre>
+                                        </div>
+                                        <div class="form-text">
+                                            Preview of your uploaded resume content
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-chart-line me-2"></i>Analyze Match
+                                </button>
+                                <div class="btn-group">
+                                    <a th:href="@{/resume/upload}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-upload me-2"></i>Upload Different Resume
+                                    </a>
+                                    <a th:href="@{/resume/list}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-list me-2"></i>My Resumes
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-lightbulb me-2"></i>Pro Tips</h5>
+                        <ul class="mb-0">
+                            <li>Copy the entire job posting, including requirements and responsibilities</li>
+                            <li>Include company information if available</li>
+                            <li>Don't edit or summarize the job description</li>
+                            <li>The more complete the job posting, the better the analysis</li>
+                            <li>Add job title and company name for better organization</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
