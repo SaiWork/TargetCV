@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::#content})}">
+<head>
+    <title th:text="${pageTitle}">Analysis Results - TargetCV</title>
+</head>
+<body>
+    <div id="content">
+        <div class="row">
+            <div class="col-lg-12">
+                <!-- Header Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="mb-0"><i class="fas fa-chart-line me-2"></i>Analysis Results</h3>
+                                <small th:if="${analysis.jobTitle}" th:text="'Position: ' + ${analysis.jobTitle}">Position: Job Title</small>
+                                <small th:if="${analysis.companyName}" th:text="' at ' + ${analysis.companyName}"> at Company</small>
+                            </div>
+                            <div class="text-end">
+                                <h2 class="mb-0" th:text="${analysis.overallMatchScore != null ? #numbers.formatInteger(analysis.overallMatchScore * 100, 0) + '%' : 'N/A'}">85%</h2>
+                                <small>Match Score</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Resume:</strong> <span th:text="${analysis.resume.originalFilename}">resume.pdf</span></p>
+                                <p><strong>Analysis Date:</strong> <span th:text="${#temporals.format(analysis.createdAt, 'MMM dd, yyyy HH:mm')}">Date</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="progress mb-2" style="height: 25px;">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         th:style="'width: ' + ${analysis.overallMatchScore != null ? #numbers.formatInteger(analysis.overallMatchScore * 100, 0) : 0} + '%'"
+                                         th:text="${analysis.overallMatchScore != null ? #numbers.formatInteger(analysis.overallMatchScore * 100, 0) + '%' : 'N/A'}">85%</div>
+                                </div>
+                                <small class="text-muted">Overall Match Percentage</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Section -->
+                <!-- Job Description Section -->
+                <div class="row mb-4">
+                    <div class="col-lg-12" th:if="${analysis.jobDescription}">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Job Description</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="job-description" style="max-height: 200px; overflow-y: auto; background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+                                    <pre style="white-space: pre-wrap; font-size: 0.9em; margin: 0;" th:text="${#strings.length(analysis.jobDescription) > 500 ? #strings.substring(analysis.jobDescription, 0, 500) + '...' : analysis.jobDescription}">Job description will appear here...</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Results Grid -->
+                <div class="row">
+                    <!-- Matched Keywords -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-check-circle me-2"></i>Matched Keywords
+                                    <span class="badge bg-light text-success ms-2" th:text="${#lists.size(matchedKeywords)}">0</span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div th:if="${#lists.isEmpty(matchedKeywords)}" class="text-muted">
+                                    No matched keywords found
+                                </div>
+                                <div th:unless="${#lists.isEmpty(matchedKeywords)}">
+                                    <span th:each="keyword : ${matchedKeywords}" 
+                                          class="badge bg-success me-1 mb-1" th:text="${keyword}">keyword</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Missing Keywords -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Missing Keywords
+                                    <span class="badge bg-light text-warning ms-2" th:text="${#lists.size(missingKeywords)}">0</span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div th:if="${#lists.isEmpty(missingKeywords)}" class="text-muted">
+                                    All important keywords are present!
+                                </div>
+                                <div th:unless="${#lists.isEmpty(missingKeywords)}">
+                                    <span th:each="keyword : ${missingKeywords}" 
+                                          class="badge bg-warning text-dark me-1 mb-1" th:text="${keyword}">keyword</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Matched Skills -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-tools me-2"></i>Matched Skills
+                                    <span class="badge bg-light text-info ms-2" th:text="${#lists.size(matchedSkills)}">0</span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div th:if="${#lists.isEmpty(matchedSkills)}" class="text-muted">
+                                    No matched skills found
+                                </div>
+                                <div th:unless="${#lists.isEmpty(matchedSkills)}">
+                                    <span th:each="skill : ${matchedSkills}" 
+                                          class="badge bg-info me-1 mb-1" th:text="${skill}">skill</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Missing Skills -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-danger text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-times-circle me-2"></i>Missing Skills
+                                    <span class="badge bg-light text-danger ms-2" th:text="${#lists.size(missingSkills)}">0</span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div th:if="${#lists.isEmpty(missingSkills)}" class="text-muted">
+                                    All required skills are present!
+                                </div>
+                                <div th:unless="${#lists.isEmpty(missingSkills)}">
+                                    <span th:each="skill : ${missingSkills}" 
+                                          class="badge bg-danger me-1 mb-1" th:text="${skill}">skill</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Analysis -->
+                <div class="row">
+                    <!-- Strengths -->
+                    <div class="col-lg-4 mb-4" th:if="${!#lists.isEmpty(strengths)}">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fas fa-star me-2"></i>Strengths</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li th:each="strength : ${strengths}" class="mb-2">
+                                        <i class="fas fa-check text-success me-2"></i>
+                                        <span th:text="${strength}">strength</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recommendations -->
+                    <div class="col-lg-4 mb-4" th:if="${!#lists.isEmpty(recommendations)}">
+                        <div class="card h-100">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Recommendations</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li th:each="recommendation : ${recommendations}" class="mb-2">
+                                        <i class="fas fa-arrow-right text-primary me-2"></i>
+                                        <span th:text="${recommendation}">recommendation</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Improvements -->
+                    <div class="col-lg-4 mb-4" th:if="${!#lists.isEmpty(improvements)}">
+                        <div class="card h-100">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0"><i class="fas fa-wrench me-2"></i>Areas for Improvement</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li th:each="improvement : ${improvements}" class="mb-2">
+                                        <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                                        <span th:text="${improvement}">improvement</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <div class="btn-group mb-3" role="group">
+                                    <a th:href="@{/analysis/analyze/{id}(id=${analysis.resume.id})}" 
+                                       class="btn btn-primary">
+                                        <i class="fas fa-redo me-2"></i>Analyze Another Job
+                                    </a>
+                                    <a th:href="@{/analysis/history/{id}(id=${analysis.resume.id})}" 
+                                       class="btn btn-outline-secondary">
+                                        <i class="fas fa-history me-2"></i>View Analysis History
+                                    </a>
+                                    <a th:href="@{/resume/list}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-list me-2"></i>My Resumes
+                                    </a>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        This analysis is automatically saved and can be accessed from your resume history.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
