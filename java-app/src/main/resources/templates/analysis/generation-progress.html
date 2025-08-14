@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Resume Generation Progress - TargetCV</title>
+</head>
+<body>
+    <main>
+        <div class="container mt-4">
+            <div class="row">
+                <div class="col-md-8 mx-auto">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">
+                                <i class="fas fa-magic me-2"></i>
+                                AI Resume Generation in Progress
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <!-- Job Information -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">Job Title</h6>
+                                    <p class="fw-bold" th:text="${jobAnalysis.jobTitle}">Software Engineer</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">Company</h6>
+                                    <p class="fw-bold" th:text="${jobAnalysis.companyName}">Tech Corp</p>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0">Generation Progress</h6>
+                                    <span id="progress-percentage" class="badge bg-primary" th:text="${generatedResume.progressPercentage} + '%'">0%</span>
+                                </div>
+                                <div class="progress mb-2" style="height: 20px;">
+                                    <div id="progress-bar" 
+                                         class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                                         role="progressbar" 
+                                         th:style="'width: ' + ${generatedResume.progressPercentage} + '%'"
+                                         th:aria-valuenow="${generatedResume.progressPercentage}"
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <p id="progress-message" class="text-muted mb-0" th:text="${generatedResume.progressMessage}">Initializing...</p>
+                            </div>
+
+                            <!-- Status Information -->
+                            <div class="alert alert-info" id="status-info">
+                                <div class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm me-3" role="status" id="loading-spinner">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <div>
+                                        <strong>Status:</strong> <span id="status-text" th:text="${generatedResume.status}">IN_PROGRESS</span><br>
+                                        <small class="text-muted">Please wait while our AI optimizes your resume for this position...</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Completion Actions (Hidden initially) -->
+                            <div id="completion-actions" class="text-center" style="display: none;">
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    <strong>Resume generation completed successfully!</strong>
+                                </div>
+                                <a id="view-result-btn" 
+                                   th:href="@{/analysis/generation/result/{id}(id=${generatedResume.id})}"
+                                   class="btn btn-success btn-lg me-2">
+                                    <i class="fas fa-eye me-2"></i>
+                                    View Generated Resume
+                                </a>
+                                <a th:href="@{/analysis/results/{id}(id=${jobAnalysis.id})}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>
+                                    Back to Analysis
+                                </a>
+                            </div>
+
+                            <!-- Error Display (Hidden initially) -->
+                            <div id="error-display" class="alert alert-danger" style="display: none;">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Generation Failed:</strong>
+                                <span id="error-message"></span>
+                                <div class="mt-2">
+                                    <a th:href="@{/analysis/results/{id}(id=${jobAnalysis.id})}" 
+                                       class="btn btn-outline-danger">
+                                        <i class="fas fa-arrow-left me-2"></i>
+                                        Back to Analysis
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Estimated Time -->
+                            <div class="text-center mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Estimated time: 15-30 seconds
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- JavaScript for Progress Polling -->
+        <script>
+            const generatedResumeId = /*[[${generatedResume.id}]]*/ 0;
+            let pollInterval;
+
+            function updateProgress() {
+                fetch(`/targetcv/analysis/api/generation/progress/${generatedResumeId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update progress bar
+                        const progressBar = document.getElementById('progress-bar');
+                        const progressPercentage = document.getElementById('progress-percentage');
+                        const progressMessage = document.getElementById('progress-message');
+                        const statusText = document.getElementById('status-text');
+
+                        progressBar.style.width = data.progressPercentage + '%';
+                        progressBar.setAttribute('aria-valuenow', data.progressPercentage);
+                        progressPercentage.textContent = data.progressPercentage + '%';
+                        progressMessage.textContent = data.progressMessage;
+                        statusText.textContent = data.status;
+
+                        // Check if completed
+                        if (data.isCompleted) {
+                            clearInterval(pollInterval);
+                            document.getElementById('loading-spinner').style.display = 'none';
+                            document.getElementById('status-info').style.display = 'none';
+                            document.getElementById('completion-actions').style.display = 'block';
+                            
+                            // Auto-redirect after 2 seconds
+                            setTimeout(() => {
+                                window.location.href = `/targetcv/analysis/generation/result/${generatedResumeId}`;
+                            }, 2000);
+                        }
+                        
+                        // Check if failed
+                        if (data.hasFailed) {
+                            clearInterval(pollInterval);
+                            document.getElementById('loading-spinner').style.display = 'none';
+                            document.getElementById('status-info').style.display = 'none';
+                            document.getElementById('error-display').style.display = 'block';
+                            document.getElementById('error-message').textContent = data.errorMessage || 'Unknown error occurred';
+                            
+                            // Update progress bar to red
+                            progressBar.classList.remove('bg-success');
+                            progressBar.classList.add('bg-danger');
+                            progressBar.classList.remove('progress-bar-animated');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error polling progress:', error);
+                        // Continue polling even on error
+                    });
+            }
+
+            // Start polling when page loads
+            document.addEventListener('DOMContentLoaded', function() {
+                // Initial update
+                updateProgress();
+                
+                // Poll every 1 second
+                pollInterval = setInterval(updateProgress, 1000);
+                
+                // Stop polling after 2 minutes (safety measure)
+                setTimeout(() => {
+                    if (pollInterval) {
+                        clearInterval(pollInterval);
+                        console.log('Polling stopped after 2 minutes');
+                    }
+                }, 120000);
+            });
+
+            // Clean up interval when page is unloaded
+            window.addEventListener('beforeunload', function() {
+                if (pollInterval) {
+                    clearInterval(pollInterval);
+                }
+            });
+        </script>
+    </main>
+</body>
+</html>

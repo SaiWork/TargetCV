@@ -29,13 +29,27 @@
                                     </div>
                                     
                                     <div class="mb-4">
-                                        <label for="jobDescription" class="form-label">
-                                            <strong>Job Description *</strong>
-                                        </label>
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label for="jobDescription" class="form-label mb-0">
+                                                <strong>Job Description *</strong>
+                                            </label>
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-primary" id="loadJobBtn" data-bs-toggle="modal" data-bs-target="#loadJobModal">
+                                                    <i class="fas fa-folder-open me-1"></i>Load Saved
+                                                </button>
+                                                <button type="button" class="btn btn-outline-success" id="saveJobBtn">
+                                                    <i class="fas fa-save me-1"></i>Save Job
+                                                </button>
+                                            </div>
+                                        </div>
                                         <textarea class="form-control" id="jobDescription" name="jobDescription" 
                                                  rows="12" placeholder="Paste the complete job description here..." required></textarea>
                                         <div class="form-text">
                                             Include the full job posting for best analysis results
+                                        </div>
+                                        <div id="saveJobAlert" class="alert alert-success mt-2" style="display: none;">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            <span id="saveJobMessage">Job description saved successfully!</span>
                                         </div>
                                     </div>
                                 </div>
@@ -90,5 +104,243 @@
             </div>
         </div>
     </div>
+
+    <!-- Load Job Modal -->
+    <div class="modal fade" id="loadJobModal" tabindex="-1" aria-labelledby="loadJobModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="loadJobModalLabel">
+                        <i class="fas fa-folder-open me-2"></i>Load Saved Job Description
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="loadJobLoading" class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Loading saved jobs...</p>
+                    </div>
+                    <div id="loadJobContent" style="display: none;">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="jobSearchInput" placeholder="Search jobs by title or company...">
+                        </div>
+                        <div id="savedJobsList" class="list-group" style="max-height: 400px; overflow-y: auto;">
+                            <!-- Jobs will be loaded here -->
+                        </div>
+                        <div id="noJobsMessage" class="text-center text-muted py-4" style="display: none;">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No saved job descriptions found.</p>
+                            <small>Save job descriptions to reuse them later!</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="/targetcv/jobs" class="btn btn-outline-primary">
+                        <i class="fas fa-cog me-1"></i>Manage Jobs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for Save/Load Functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const saveJobBtn = document.getElementById('saveJobBtn');
+            const loadJobBtn = document.getElementById('loadJobBtn');
+            const jobTitleInput = document.getElementById('jobTitle');
+            const companyNameInput = document.getElementById('companyName');
+            const jobDescriptionInput = document.getElementById('jobDescription');
+            const saveJobAlert = document.getElementById('saveJobAlert');
+            const saveJobMessage = document.getElementById('saveJobMessage');
+            const loadJobModal = new bootstrap.Modal(document.getElementById('loadJobModal'));
+            
+            // Save job description
+            saveJobBtn.addEventListener('click', function() {
+                const jobTitle = jobTitleInput.value.trim();
+                const companyName = companyNameInput.value.trim();
+                const jobDescription = jobDescriptionInput.value.trim();
+                
+                if (!jobDescription) {
+                    alert('Please enter a job description before saving.');
+                    return;
+                }
+                
+                // Show loading state
+                saveJobBtn.disabled = true;
+                saveJobBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+                
+                // Make AJAX request to save job
+                fetch('/targetcv/jobs/quick-save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        jobTitle: jobTitle || 'Untitled Position',
+                        companyName: companyName || 'Unknown Company',
+                        jobDescription: jobDescription
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        saveJobMessage.textContent = data.message;
+                        saveJobAlert.style.display = 'block';
+                        setTimeout(() => {
+                            saveJobAlert.style.display = 'none';
+                        }, 3000);
+                    } else {
+                        alert('Error saving job: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error saving job description.');
+                })
+                .finally(() => {
+                    // Reset button state
+                    saveJobBtn.disabled = false;
+                    saveJobBtn.innerHTML = '<i class="fas fa-save me-1"></i>Save Job';
+                });
+            });
+            
+            // Load saved jobs when modal is opened
+            document.getElementById('loadJobModal').addEventListener('show.bs.modal', function() {
+                loadSavedJobs();
+            });
+            
+            function loadSavedJobs() {
+                const loadingDiv = document.getElementById('loadJobLoading');
+                const contentDiv = document.getElementById('loadJobContent');
+                const jobsList = document.getElementById('savedJobsList');
+                const noJobsMessage = document.getElementById('noJobsMessage');
+                
+                loadingDiv.style.display = 'block';
+                contentDiv.style.display = 'none';
+                
+                fetch('/targetcv/jobs/api/list')
+                    .then(response => response.json())
+                    .then(jobs => {
+                        loadingDiv.style.display = 'none';
+                        contentDiv.style.display = 'block';
+                        
+                        if (jobs.length === 0) {
+                            jobsList.style.display = 'none';
+                            noJobsMessage.style.display = 'block';
+                            return;
+                        }
+                        
+                        jobsList.style.display = 'block';
+                        noJobsMessage.style.display = 'none';
+                        
+                        jobsList.innerHTML = '';
+                        jobs.forEach(job => {
+                            const jobItem = createJobListItem(job);
+                            jobsList.appendChild(jobItem);
+                        });
+                        
+                        // Add search functionality
+                        const searchInput = document.getElementById('jobSearchInput');
+                        searchInput.addEventListener('input', function() {
+                            filterJobs(this.value.toLowerCase());
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error loading jobs:', error);
+                        loadingDiv.style.display = 'none';
+                        contentDiv.style.display = 'block';
+                        jobsList.innerHTML = '<div class="alert alert-danger">Error loading saved jobs.</div>';
+                    });
+            }
+            
+            function createJobListItem(job) {
+                const div = document.createElement('div');
+                div.className = 'list-group-item list-group-item-action job-item';
+                div.setAttribute('data-job-id', job.id);
+                div.setAttribute('data-search-text', (job.title + ' ' + job.companyName).toLowerCase());
+                
+                div.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">${job.title}</h6>
+                            <p class="mb-1 text-muted">${job.companyName}</p>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>
+                                Saved ${new Date(job.createdAt).toLocaleDateString()}
+                            </small>
+                        </div>
+                        <div>
+                            <span class="badge bg-${getStatusColor(job.applicationStatus)}">
+                                ${job.applicationStatus}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                
+                div.addEventListener('click', function() {
+                    loadJobIntoForm(job.id);
+                });
+                
+                return div;
+            }
+            
+            function getStatusColor(status) {
+                const colors = {
+                    'SAVED': 'secondary',
+                    'APPLIED': 'primary',
+                    'INTERVIEWING': 'warning',
+                    'OFFERED': 'success',
+                    'REJECTED': 'danger',
+                    'WITHDRAWN': 'dark'
+                };
+                return colors[status] || 'secondary';
+            }
+            
+            function filterJobs(searchText) {
+                const jobItems = document.querySelectorAll('.job-item');
+                jobItems.forEach(item => {
+                    const searchData = item.getAttribute('data-search-text');
+                    if (searchData.includes(searchText)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            }
+            
+            function loadJobIntoForm(jobId) {
+                fetch(`/targetcv/jobs/load/${jobId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            jobTitleInput.value = data.jobTitle || '';
+                            companyNameInput.value = data.companyName || '';
+                            jobDescriptionInput.value = data.jobDescription || '';
+                            
+                            loadJobModal.hide();
+                            
+                            // Show success message
+                            saveJobMessage.textContent = 'Job description loaded successfully!';
+                            saveJobAlert.className = 'alert alert-info mt-2';
+                            saveJobAlert.style.display = 'block';
+                            setTimeout(() => {
+                                saveJobAlert.style.display = 'none';
+                                saveJobAlert.className = 'alert alert-success mt-2';
+                            }, 3000);
+                        } else {
+                            alert('Error loading job: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error loading job description.');
+                    });
+            }
+        });
+    </script>
 </body>
 </html>

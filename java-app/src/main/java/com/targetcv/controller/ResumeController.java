@@ -11,6 +11,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -128,6 +129,21 @@ public class ResumeController {
             logger.error("Error viewing resume with ID: {}", id, e);
             model.addAttribute("error", "Resume not found");
             return "error";
+        }
+    }
+    
+    /**
+     * Get resumes list for API/AJAX calls (used in job-first approach)
+     */
+    @GetMapping("/api/list")
+    @ResponseBody
+    public ResponseEntity<List<Resume>> getResumesList() {
+        try {
+            List<Resume> resumes = resumeRepository.findAllByOrderByCreatedAtDesc();
+            return ResponseEntity.ok(resumes);
+        } catch (Exception e) {
+            logger.error("Error getting resumes list: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).build();
         }
     }
     
